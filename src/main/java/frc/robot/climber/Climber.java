@@ -22,11 +22,11 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.Command;
 
 public class Climber extends SubsystemBase {
@@ -46,6 +46,7 @@ public class Climber extends SubsystemBase {
   public final double L2L3RUNG = 0;
   public final double RATCHET = 0;
   private final double MAX_SPEED = 0.5;
+  private final double MARGIN = 0;
 
   final TalonFXConfiguration pivotConfig = new TalonFXConfiguration()
     .withMotorOutput(
@@ -77,9 +78,7 @@ public class Climber extends SubsystemBase {
          .withKD(0)
          .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign)
          .withGravityType(GravityTypeValue.Arm_Cosine)
-         );
-          
-        
+         );   
 
   final TalonFXConfiguration leaderConfig = new TalonFXConfiguration()
     .withMotorOutput(
@@ -224,7 +223,7 @@ public class Climber extends SubsystemBase {
   public Command stopPivot() {
     return this.run(() -> stopMotor());
   }
-  
+
   //Elevator Manual Commands
   public Command up(){
     return this.run(() -> leaderMotor.set(MAX_SPEED));
@@ -236,6 +235,30 @@ public class Climber extends SubsystemBase {
 
   public Command stop(){
     return this.run(() -> stopMotors());
+  }
+
+  /**
+   * 
+   * @return
+  */
+  public Trigger isTopLSPressed(){
+    return new Trigger(()-> topLS.get());
+  }
+
+  /**
+   * 
+   * @return
+   */
+  public Trigger isHallEffectPressed(){
+    return new Trigger(()-> hallEffect.get());
+  }
+
+  /**
+   * 
+   * @return
+   */
+  public Trigger onPositionTrigger(){
+    return new Trigger(()-> MathUtil.isNear(getClr(), getLeaderPosition(), MARGIN));
   }
 
   @Override
