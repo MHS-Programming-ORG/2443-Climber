@@ -6,6 +6,7 @@ package frc.robot.climber;
 
 import static edu.wpi.first.units.Units.Amps;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -32,15 +33,12 @@ public class Climber extends SubsystemBase {
   /** Creates a new Climber. */
   private TalonFX leaderMotor;
   private TalonFX followerMotor;
-  TalonFX PivotMotor;
+  private TalonFX PivotMotor;
  
-  private final PIDController pivotPID;
   private final DigitalInput LimitSwitch;
 
   private DigitalInput topLS;
   private DigitalInput hallEffect;
-
-  private double setpoint;
 
    //Climber hook distances (position) for each rung of the tower
   public final double AUTO_L1 = 0;
@@ -64,7 +62,23 @@ public class Climber extends SubsystemBase {
         .withForwardSoftLimitThreshold(49)
         .withReverseSoftLimitEnable(true)
         .withReverseSoftLimitThreshold(0)
-      );
+         ).withMotionMagic(new MotionMagicConfigs()
+         .withMotionMagicCruiseVelocity(0)
+         .withMotionMagicAcceleration(0)
+         .withMotionMagicExpo_kV(0)
+         .withMotionMagicExpo_kA(0)
+         ).withSlot0(new Slot0Configs()
+         .withKS(0)
+         .withKG(0)
+         .withKV(0)
+         .withKA(0)
+         .withKP(0)
+         .withKI(0)
+         .withKD(0)
+         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign)
+         .withGravityType(GravityTypeValue.Arm_Cosine)
+         );
+          
         
 
   final TalonFXConfiguration leaderConfig = new TalonFXConfiguration()
@@ -126,12 +140,16 @@ public class Climber extends SubsystemBase {
         .withReverseSoftLimitThreshold(0)
     );
 
+  private MotionMagicVoltage magic;
+
+  private MotionMagicVoltage pivotMagic;
+
+  private StatusSignal<Double> clr;
+
   public Climber(int leaderMotorID, int followerMotorID, int topLSID, int hallEffectID, int pivotID, int LimitSwitchID) {
     PivotMotor = new TalonFX(pivotID); 
-    pivotPID = new PIDController(0.2, 0, 0);
     LimitSwitch = new DigitalInput(LimitSwitchID);
-    pivotPID.setTolerance(0);
-    
+    pivotMagic = new MotionMagicVoltage(0);
     
     leaderMotor = new TalonFX(leaderMotorID);
     leaderMotor.getConfigurator().apply(leaderConfig);
@@ -145,6 +163,17 @@ public class Climber extends SubsystemBase {
 
     topLS = new DigitalInput(topLSID);
     hallEffect = new DigitalInput(hallEffectID);
+
+    magic = new MotionMagicVoltage(0);
+
+    clr = leaderMotor.getClosedLoopReference();
+    clr.setUpdateFrequency(0);
+
+  }
+
+  public double getClr(){
+    clr.refresh();
+    return clr.getValueAsDouble();
   }
 
   public boolean LimitSwitchPressed() {
@@ -152,16 +181,11 @@ public class Climber extends SubsystemBase {
   }
 
   public void goToAngle(double targetAngle) {
-    double output = pivotPID.calculate(getPivotEncoder(), targetAngle);
-    PivotMotor.set(output);
+    PivotMotor.setControl(pivotMagic.withPosition(targetAngle));
   }
 
   public double getPivotEncoder() {
     return PivotMotor.getRotorPosition().getValueAsDouble();
-  }
-
-  public boolean pidAtSetpoint() {
-    return pivotPID.atSetpoint();
   }
 
   public void stopMotor() {
@@ -179,14 +203,9 @@ public class Climber extends SubsystemBase {
   public boolean getHallEffectValue(){
     return !hallEffect.get();
   }
-  
-  public boolean isAtSetpoint(){
-    return Math.abs(getLeaderPosition() - setpoint) >= 0;
-  }
 
   public void goToHeight(double position){
-    setpoint = position;
-    leaderMotor.setControl(new MotionMagicVoltage(position));
+    leaderMotor.setControl(magic.withPosition(position));
   }
 
   public void stopMotors(){
@@ -241,7 +260,6 @@ public class Climber extends SubsystemBase {
     SmartDashboard.putNumber("[C] Leader Position", getLeaderPosition());
     SmartDashboard.putNumber("[C] Follower Position", getFollowerPosition());
     SmartDashboard.putBoolean("[C] Hall Effect", getHallEffectValue());
-    SmartDashboard.putNumber("[C] Setpoint", setpoint);
 
     SmartDashboard.putBoolean("Limit Switch", LimitSwitchPressed());
     SmartDashboard.putNumber("Pivot Position", getPivotEncoder());
