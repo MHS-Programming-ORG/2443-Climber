@@ -6,29 +6,24 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.climber.Climber;
-
-import frc.robot.commands.RatchetPassiveHooks;
-import frc.robot.commands.ReachForRung;
-import frc.robot.commands.GoToTop;
+import frc.robot.Constants.ClimberConstants;
 
 // NOTE:  Consider using this command inline, rather than writing a subclass.  For more
 // information, see:
 // https://docs.wpilib.org/en/stable/docs/software/commandbased/convenience-features.html
-public class TeleopClimbSequence extends SequentialCommandGroup {
+public class TeleopHang extends SequentialCommandGroup {
   /** Creates a new TeleopHang. */
   public Climber climber;
-  public TeleopClimbSequence(Climber newClimber) {
+  public TeleopHang(Climber newClimber) {
     climber = newClimber;
     addRequirements(climber);
     // Add your commands in the addCommands() call, e.g.
     // addCommands(new FooCommand(), new BarCommand());
-    addCommands(
-      new RatchetPassiveHooks(climber),
-      new ReachForRung(climber),
-      new GoToTop(climber),
-      new ReachForRung(climber),
-      new GoToTop(climber),
-      new ReachForRung(climber)
-      ); 
+    addCommands(new GoToHeight(climber, ClimberConstants.L1RUNG), 
+      new ActivatePassiveHooks(climber),
+      new GoToHeight(climber, ClimberConstants.L2L3RUNG),
+      new ActivatePassiveHooks(climber),
+      new GoToHeight(climber, ClimberConstants.L2L3RUNG),
+      new ActivatePassiveHooks(climber));
   }
 }
