@@ -6,13 +6,14 @@ package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.climber.Climber;
+import frc.robot.Constants.ClimberConstants;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class AutoClimbSequence extends Command {
+public class AutoHang extends Command {
   /** Creates a new AutoHang. */
   public Climber climber;
 
-  public AutoClimbSequence(Climber newClimber) {
+  public AutoHang(Climber newClimber) {
     climber = newClimber;
     addRequirements(climber);
     // Use addRequirements() here to declare subsystem dependencies.
@@ -25,7 +26,7 @@ public class AutoClimbSequence extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    climber.setClimberSetpoint(climber.AUTO_L1);
+    climber.goToHeight(ClimberConstants.L1RUNG);
   }
 
   // Called once the command ends or is interrupted.
@@ -36,6 +37,6 @@ public class AutoClimbSequence extends Command {
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return climber.atPositionTrigger().getAsBoolean();
+    return false;
   }
 }
